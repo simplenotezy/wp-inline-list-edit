@@ -34,6 +34,18 @@
  * wp inline list edit
  */
 
+    #theInlineTable {
+        table {
+            tr {
+                td {
+                    input, select {
+                        width: 90%;
+                    }
+                }
+            }
+        }
+    }
+
 
 /**
  * tag-it.js
