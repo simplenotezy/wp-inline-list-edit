@@ -99,10 +99,10 @@
 
 
 											if($key == 0) {
-												echo '<div class="row-actions">';
-													echo '<span><a href="#">Action</a> |</span>';
-													echo '<span><a href="#">Action</a></span>';
-												echo '</div>';
+												// echo '<div class="row-actions">';
+												// 	echo '<span><a href="' . admin_url('post.php?post=' . $post['ID'] . '&action=edit') . '" tabindex="-1">' . __('Edit') . '</a> |</span>';
+												// 	echo '<span><a href="' . $post['guid'] . '" tabindex="-1">' . __('View') . '</a></span>';
+												// echo '</div>';
 											}
 										echo '</td>';
 									}
@@ -286,12 +286,74 @@
 						));
 				} else {
 					// meta
-					$updated = update_post_meta($_POST['post_id'], $_POST['name'], $_POST['value']);
+					//$updated = update_post_meta($_POST['post_id'], $_POST['name'], $_POST['value']);
+					$updated = add_post_meta( $_POST['post_id'], $_POST['name'], $_POST['value'], true ) || update_post_meta( $_POST['post_id'], $_POST['name'], $_POST['value']);
 				}
 
-				exit(json_encode(array('updated' => $updated)));
+				exit(json_encode(array(
+					'updated' => $updated
+				)));
 				
 				wp_die(); // this is required to terminate immediately and return a proper response
+			}
+		/**
+		 * Quick add
+		 */
+
+			add_action( 'wp_ajax_wpille_add_post', 'wpille_add_post' );
+
+			function wpille_add_post() {
+				global $wpdb;
+
+				/**
+				 * Default fields
+				 * @var array
+				 */
+				
+					$post = array();
+
+					if(is_array($_POST['post']['fields']))
+						foreach($_POST['post']['fields'] as $field)
+							$post[$field['name']] = $field['value'];
+
+				/**
+				 * Ensure defaults
+				 * @var [type]
+				 */
+				
+					// post type
+					if(!isset($post['post_type']))
+						$post['post_type'] = (isset($_POST['post']['post_type']) && $_POST['post']['post_type']) ? $_POST['post']['post_type'] : 'post';
+				
+					// post status
+					if(!isset($_POST['post_status']))
+						$post['post_status'] = 'publish';
+				
+				/**
+				 * Create post
+				 */
+
+					$post_id = wp_insert_post($post);
+
+				/**
+				 * Add meta
+				 */
+				
+					if(is_array($_POST['post']['meta']))
+						foreach($_POST['post']['meta'] as $key => $value)
+							add_post_meta($post_id, $key, $value, true);
+
+				/**
+				 * Return data
+				 */
+				
+					exit(json_encode(array(
+						'updated' 	=> $updated,
+						'created' 	=> true,
+						'post_id'   => $post_id
+					)));
+
+					wp_die(); // this is required to terminate immediately and return a proper response
 			}
 
 		/**
@@ -335,6 +397,28 @@
 			}
 
 		/**
+		 * Featured image
+		 */
+			
+			add_filter('wp_inline_list_edit_metafield__thumbnail_id', 'wp_inline_list_edit_metafield_featured_image',10,3);
+
+			function wp_inline_list_edit_metafield_featured_image($image_id) {
+				$return = '<div class="featured-image"><input type="hidden" data-type="post_meta" data-name="_thumbnail_id" value="' . $image_id . '">';
+
+				$image = wp_get_attachment_image_src( $image_id, 'thumbnail');
+				$return .= '<IMG src="' . $image[0] . '"';
+
+					if(!$image_id)
+						$return .= ' style="display:none;"';
+
+				$return .= '>';
+
+				$return .= '<a href="#" class="setFeaturedImage">' . __('Set featured image') . '</a>';
+
+				return $return . '</div>';
+			}
+
+		/**
 		 * Post status
 		 */
 		
@@ -374,7 +458,7 @@
 					$authors = unserialize($authors);
 				} else {
 					$authors = get_users(array(
-						'who' => 'authors'
+						//'who' => 'authors'
 					));
 
 					wp_cache_add('wpille_authors', serialize($authors), null, 5);

@@ -36,10 +36,38 @@
 
     #theInlineTable {
         table {
-            tr {
-                td {
-                    input, select {
-                        width: 100%;
+            tbody {
+                tr {
+                    th,td {
+                        height: 60px;
+                        vertical-align:middle;
+                    }
+                    th {
+                        padding-top: 2px;
+
+                        input[type="checkbox"] {
+                            margin-top: 0;
+                        }
+
+                        .spinner {
+                            margin-top: -3px;
+                        }
+                    }
+                        
+                    td {
+                        input, select, textarea {
+                            width: 100%;
+                        }
+
+                        .featured-image {
+                            img {
+                                height: 50px;
+                                width: 50px;
+                            }
+                            .setFeaturedImage {
+                               
+                            }
+                        }
                     }
                 }
             }
