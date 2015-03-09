@@ -674,7 +674,7 @@ $(document).ready(function() {
 				var post_editing_container = $('#theInlineTable .wp_inline_edit[data-post-id="' + post_editing + '"]');
 
 				post_editing_container.find('.featured-image img').attr('src', attachment.url).show(); // set featured image
-				post_editing_container.find('.featured-image input[type="hidden"]').val(attachment.id); // set attachment id
+				post_editing_container.find('.featured-image input[type="hidden"]').val(attachment.id).trigger('change'); // set attachment id
 
 				// jQuery('#cupp_meta').val('');
 				// jQuery('#cupp_upload_meta').val(attachment.url);
@@ -692,6 +692,8 @@ $(document).ready(function() {
 
 	 	var data, wpile_creating_new_post = null;
 		$('#theInlineTable').on('change', '.wp_inline_edit input, .wp_inline_edit select, .wp_inline_edit textarea', function() {
+			
+			console.log('Input changed!');
 
 			/**
 			 * Get general data
@@ -808,12 +810,16 @@ $(document).ready(function() {
 			/**
 			 * Send request
 			 */
-				
+				console.log(data);
+
 				$.ajax({
 					type: 'POST',
 					url: ajaxurl,
 					data: data,
 					success: function(response) {
+						
+						console.log(response);
+
 						/* reset flag */
 						wpile_creating_new_post = false;
 
