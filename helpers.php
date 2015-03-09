@@ -40,3 +40,8 @@
 
 		return $meta_keys;
 	}
+
+
+	function wpille_keyToReadable($string) {
+		return ucfirst(str_replace(['-', '_'], ' ', $string));
+	}

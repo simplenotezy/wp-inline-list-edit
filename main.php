@@ -50,6 +50,12 @@
 
 					$post_columns = explode(',', $_GET['fields']);
 					$post_meta = explode(',', $_GET['meta']);
+
+
+					if(count($post_meta) == 1 && $post_meta[0] == '')
+						$post_meta = array();
+
+
 					$columns = array_merge($post_columns, $post_meta);
 
 					echo '<table class="widefat fixed" cellspacing="0">';
@@ -58,7 +64,7 @@
 								echo '<th id="cb" class="manage-column column-cb check-column" scope="col"></th>';
 								
 								foreach($columns as $column)
-									echo '<th id="columnname" class="manage-column column-columnname" scope="col">' . $column . '</th>';
+									echo '<th id="columnname" class="manage-column column-columnname" scope="col">' . wpille_keyToReadable($column) . '</th>';
 								
 							echo '</tr>';
 						echo '</thead>';
@@ -68,7 +74,7 @@
 								echo '<th class="manage-column column-cb check-column" scope="col"></th>';
 								
 								foreach($columns as $column)
-									echo '<th id="columnname" class="manage-column column-columnname" scope="col">' . $column . '</th>';
+									echo '<th id="columnname" class="manage-column column-columnname" scope="col">' . wpille_keyToReadable($column) . '</th>';
 
 							echo '</tr>';
 						echo '</tfoot>';

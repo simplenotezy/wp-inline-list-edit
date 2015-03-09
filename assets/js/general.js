@@ -622,6 +622,9 @@ $(document).ready(function() {
 		var column = $(this).data('type');
 		var name = $(this).data('name');
 		var post_id = $(this).parents('.wp_inline_edit').data('post-id');
+		var container = $(this).parent();
+
+		container.prepend('<div class="spinner" style="display:inline;"></div>');
 
 		var query = '?wpInlineListEditPost=' + post_id + '&field=' + column + '&value=' + input;
 
@@ -637,7 +640,9 @@ $(document).ready(function() {
 		console.log(data);
 		
 		$.post(ajaxurl, data, function(response) {
-			alert('Got this from the server: ' + response);
+			//alert('Got this from the server: ' + response);
+
+			container.find('.spinner').remove();
 		});
 
 
@@ -657,10 +662,10 @@ function generate_table_query() {
 	return query;
 }
 
-		function buildTable() {
-			console.log('fetching table: ', wpInlineListEdit.site_url + '?wpInlineListEditTable' + generate_table_query());
-			$.get(wpInlineListEdit.site_url + '/wp-admin/?wpInlineListEditTable' + generate_table_query(), function(response) {
-				console.log('has table!');
-				$('#theInlineTable').html(response);
-			});
-		}
+function buildTable() {
+	console.log('fetching table: ', wpInlineListEdit.site_url + '?wpInlineListEditTable' + generate_table_query());
+	$.get(wpInlineListEdit.site_url + '/wp-admin/?wpInlineListEditTable' + generate_table_query(), function(response) {
+		console.log('has table!');
+		$('#theInlineTable').html(response);
+	});
+}
