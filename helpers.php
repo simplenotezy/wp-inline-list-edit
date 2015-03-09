@@ -43,5 +43,7 @@
 
 
 	function wpille_keyToReadable($string) {
-		return ucfirst(str_replace(['-', '_'], ' ', $string));
+		//return mb_convert_case(str_replace(['-', '_'], ' ', $string), MB_CASE_TITLE, "UTF-8");
+		
+		return ucfirst(trim(str_replace(['-', '_'], ' ', $string)));
 	}

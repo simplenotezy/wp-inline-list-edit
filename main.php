@@ -335,6 +335,27 @@
 			}
 
 		/**
+		 * Post status
+		 */
+		
+			add_filter('wp_inline_list_edit_postfield_post_type', 'wp_inline_list_edit_postfield_post_type',10,3);
+			function wp_inline_list_edit_postfield_post_type($value) {
+				$return = '<select data-type="post_column" data-name="post_type">';
+
+					foreach(get_post_types() as $key => $name) {
+
+						$return .= '<option value="' . $key . '"';
+
+							if($key == $value)
+								$return .= ' selected';
+
+						$return .= '>' . $name . '</option>';
+					}
+
+				return $return;
+			}
+
+		/**
 		 * Post content
 		 */
 		
