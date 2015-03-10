@@ -19,7 +19,7 @@ module.exports = function(grunt) {
 					
 						wpille: {
 							files: {
-								'assets/js/wp-inline-list-edit.min.js': ['src/js/tag-it.js', 'src/js/general.js'],
+								'assets/js/wp-inline-list-edit.min.js': ['src/js/formTableNavigator.jquery.js', 'src/js/tag-it.js', 'src/js/general.js'],
 							}
 						}
 				},

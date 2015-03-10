@@ -177,8 +177,8 @@
 				 */
 				
 
-					wp_enqueue_script('wp-inline-list-edit-js', wpille_pluginUrl('assets/js/wp-inline-list-edit.min.js?time=' . time(), __FILE__ ), array('jquery-ui-autocomplete'));
-
+					wp_enqueue_script('wp-inline-list-edit-js', wpille_pluginUrl('assets/js/wp-inline-list-edit.min.js?time=' . time(), __FILE__ ), array('jquery-ui-autocomplete', 'jquery-ui-dialog'));
+					wp_enqueue_style("wp-jquery-ui-dialog");
 				/**
 				 * Localize script
 				 */
@@ -229,7 +229,7 @@
 								</tr>
 								<tr>
 									<th scope="row"><label for="post_columns">Post fields</label></th>
-									<td><ul id="post_columns" class="tagit"><li>post_title</li><li>post_type</li><li>post_status</li></ul></td>
+									<td><ul id="post_columns" class="tagit"><li>post_title</li><li>post_type</li><li>post_status</li><li>post_content</li></ul></td>
 								</tr>
 								<tr>
 									<th scope="row"><label for="post_meta">Post meta</label></th>
@@ -243,6 +243,13 @@
 					</div>
 					<div id="theInlineTable">
 					<!-- table will be loaded using jQuery -->
+					</div>
+				</div>
+
+				<div id="textarea-modal" title="Edit content">
+					<?php wp_editor('', 'textarea-editor'); ?>
+					<div class="default-editor">
+						<textarea></textarea>
 					</div>
 				</div>
 
@@ -445,7 +452,16 @@
 		
 			add_filter('wp_inline_list_edit_postfield_post_content', 'wp_inline_list_edit_postfield_post_content',10,3);
 			function wp_inline_list_edit_postfield_post_content($value) {
-				return '<textarea data-type="post_column" data-name="post_content">' . $value . '</textarea>';
+				return '<textarea data-type="post_column" data-name="post_content" class="triggerTextareaModal tinyMCE">' . $value . '</textarea>';
+			}
+
+		/**
+		 * Post excerpt
+		 */
+		
+			add_filter('wp_inline_list_edit_postfield_post_excerpt', 'wp_inline_list_edit_postfield_post_excerpt',10,3);
+			function wp_inline_list_edit_postfield_post_excerpt($value) {
+				return '<textarea data-type="post_column" data-name="post_content" class="triggerTextareaModal">' . $value . '</textarea>';
 			}
 
 		/**

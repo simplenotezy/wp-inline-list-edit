@@ -687,6 +687,78 @@ $(document).ready(function() {
 		});
 
 	/**
+	 * When you edit an textarea
+	 */
+	
+
+		var editing_textarea = null, editing_type = null;
+
+		var textareaDialog = $( "#textarea-modal" ).dialog({
+			autoOpen: false,
+			height: 550,
+			width: '80%',
+			modal: true,
+			buttons: {
+				Cancel: function() {
+					textareaDialog.dialog( "close" );
+				}
+			},
+			close: function() {
+				// form[ 0 ].reset();
+				// allFields.removeClass( "ui-state-error" );
+				
+				var content;
+				if(editing_type == 'tinymce') {
+					content = tinyMCE.activeEditor.getContent();
+				} else {
+					content = $('.ui-dialog .default-editor textarea').val();
+				}
+
+				console.log(content, editing_textarea);
+				
+				editing_textarea.val(content).trigger('change');
+			},
+			open: function() {
+				$('.ui-widget-overlay').bind('click', function () { $(this).siblings('.ui-dialog').find('.ui-dialog-content').dialog('close'); });
+			}
+		});
+
+		 $('#theInlineTable').on('click', '.wp_inline_edit .triggerTextareaModal', function() {
+			editing_textarea = $(this);
+			
+			textareaDialog.find('#wp-textarea-editor-wrap, .default-editor').hide(); // hide all editors
+
+			textareaDialog.dialog( "open" );
+
+			$('.ui-dialog-title').text('Edit ' + wpille_keyToReadable($(this).data('name')));
+
+			/**
+			 * Editor specific behaviour
+			 */
+			
+				if($(this).hasClass('tinyMCE')) {
+					editing_type = 'tinymce';
+					/**
+					 * Tiny MCE editor
+					 */
+					
+						textareaDialog.find('#wp-textarea-editor-wrap').show();
+
+						tinyMCE.activeEditor.setContent($(this).val());
+						tinyMCE.activeEditor.execCommand('mceFocus', false, tinyMCE.activeEditor.id);
+				} else {
+					console.log('default editor', $('.ui-dialog .default-editor').find('textarea'));
+					editing_type = 'default';
+
+					/**
+					 * Default editor
+					 */
+					
+						$('.ui-dialog .default-editor').show().find('textarea').val($(this).val()).focus();
+				}
+		});
+
+	/**
 	 * When fields change
 	 */
 
@@ -856,6 +928,8 @@ function buildTable() {
 		$('#theInlineTable').html(response);
 
 		appendEmptyLineToTable();
+
+		$('#theInlineTable table').formNavigation();
 	});
 }
 
@@ -883,4 +957,12 @@ function rememberSettings() {
 	localStorage.wpInlineListEditSettings = {
 
 	};
+}
+
+function wpille_keyToReadable(string) {
+	return string.trim().replace('-', ' ').replace('_', ' ');
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }

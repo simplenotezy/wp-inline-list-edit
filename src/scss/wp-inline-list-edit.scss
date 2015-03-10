@@ -29,6 +29,33 @@
 	    transition: $transition-property $transition-time $method;
 	}
 
+/**
+ * textarea modal
+ */
+
+#textarea-modal {
+    display: none;
+}
+
+ .ui-dialog {
+    #textarea-modal {
+        display: block;
+
+
+        .default-editor {
+            display: none;
+
+            textarea {
+                width: 100%;
+                height: 400px;
+            }
+        }
+
+        #wp-textarea-editor-wrap {
+            display: none;
+        }
+    }
+ }
 
 /**
  * wp inline list edit
