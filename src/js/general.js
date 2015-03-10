@@ -109,7 +109,7 @@ $(document).ready(function() {
 			width: '80%',
 			modal: true,
 			buttons: {
-				Cancel: function() {
+				Close: function() {
 					textareaDialog.dialog( "close" );
 				}
 			},
