@@ -26,9 +26,11 @@
 			 * Start up
 			 */
 			public function __construct() {
-				add_action( 'admin_init', array( $this, 'page_init' ) );
+				if(isset($_GET['page']) && $_GET['page'] == 'inline-list-edit') {
+					add_action( 'admin_init', array( $this, 'page_init' ) );
+				}
+
 				add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
-				add_action( 'admin_init', array( $this, 'load_scripts' ) );
 				add_action( 'init', array( $this, 'actions' ) );
 				
 
@@ -98,12 +100,14 @@
 											}
 
 
-											if($key == 0) {
-												// echo '<div class="row-actions">';
-												// 	echo '<span><a href="' . admin_url('post.php?post=' . $post['ID'] . '&action=edit') . '" tabindex="-1">' . __('Edit') . '</a> |</span>';
-												// 	echo '<span><a href="' . $post['guid'] . '" tabindex="-1">' . __('View') . '</a></span>';
-												// echo '</div>';
-											}
+												echo '<div class="row-actions">';
+													if($key == 0) {
+														echo '<span><a href="' . admin_url('post.php?post=' . $post['ID'] . '&action=edit') . '" tabindex="-1">' . __('Edit') . '</a> |</span>';
+														echo '<span><a href="' . $post['guid'] . '" tabindex="-1">' . __('View') . ' |</a></span>';
+													}
+													echo '<span><a href="#" tabindex="-1" class="triggerTextareaModal">' . __('Textarea') . ' |</a></span>';
+													echo '<span><a href="#" tabindex="-1" class="triggerTextareaModal tinyMCE">' . __('TinyMCE') . '</a></span>';
+												echo '</div>';
 										echo '</td>';
 									}
 
@@ -171,45 +175,6 @@
 
 			}
 
-			public function load_scripts() {	
-				/**
-				 * Load general JS
-				 */
-				
-
-					wp_enqueue_script('wp-inline-list-edit-js', wpille_pluginUrl('assets/js/wp-inline-list-edit.min.js?time=' . time(), __FILE__ ), array('jquery-ui-autocomplete', 'jquery-ui-dialog'));
-					wp_enqueue_style("wp-jquery-ui-dialog");
-				/**
-				 * Localize script
-				 */
-
-					wp_localize_script( 'wp-inline-list-edit-js', 'wpInlineListEdit', array(
-							'post_columns' => get_post_table_columns(),
-							'post_meta' => get_post_meta_keys(),
-							'site_url' => site_url()
-						));
-
-
-				/**
-				 * Styles
-				 */
-				
-					/**
-					 * Load instantButler CSS
-					 */
-					
-						wp_register_style(
-							'wp-inline-list-edit-css',
-							wpille_pluginUrl('assets/css/wp-inline-list-edit.css'),
-							array(),
-							FALSE,
-							'screen'
-						);
-
-						wp_enqueue_style( 'wp-inline-list-edit-css' );
-
-			}
-
 			/**
 			 * Options page callback
 			 */
@@ -268,6 +233,41 @@
 			{
 				wp_enqueue_media();
 
+				/**
+				 * Load general JS
+				 */
+				
+
+					wp_enqueue_script('wp-inline-list-edit-js', wpille_pluginUrl('assets/js/wp-inline-list-edit.min.js?time=' . time(), __FILE__ ), array('jquery-ui-autocomplete', 'jquery-ui-dialog'));
+					wp_enqueue_style("wp-jquery-ui-dialog");
+				/**
+				 * Localize script
+				 */
+
+					wp_localize_script( 'wp-inline-list-edit-js', 'wpInlineListEdit', array(
+							'post_columns' => get_post_table_columns(),
+							'post_meta' => get_post_meta_keys(),
+							'site_url' => site_url()
+						));
+
+
+				/**
+				 * Styles
+				 */
+				
+					/**
+					 * Load instantButler CSS
+					 */
+					
+						wp_register_style(
+							'wp-inline-list-edit-css',
+							wpille_pluginUrl('assets/css/wp-inline-list-edit.css'),
+							array(),
+							FALSE,
+							'screen'
+						);
+
+						wp_enqueue_style( 'wp-inline-list-edit-css' );
 			
 			}
 		}
@@ -446,23 +446,23 @@
 				return $return;
 			}
 
-		/**
-		 * Post content
-		 */
+		// /**
+		//  * Post content
+		//  */
 		
-			add_filter('wp_inline_list_edit_postfield_post_content', 'wp_inline_list_edit_postfield_post_content',10,3);
-			function wp_inline_list_edit_postfield_post_content($value) {
-				return '<textarea data-type="post_column" data-name="post_content" class="triggerTextareaModal tinyMCE">' . $value . '</textarea>';
-			}
+		// 	add_filter('wp_inline_list_edit_postfield_post_content', 'wp_inline_list_edit_postfield_post_content',10,3);
+		// 	function wp_inline_list_edit_postfield_post_content($value) {
+		// 		return '<textarea data-type="post_column" data-name="post_content" class="triggerTextareaModal tinyMCE">' . $value . '</textarea>';
+		// 	}
 
-		/**
-		 * Post excerpt
-		 */
+		// /**
+		//  * Post excerpt
+		//  */
 		
-			add_filter('wp_inline_list_edit_postfield_post_excerpt', 'wp_inline_list_edit_postfield_post_excerpt',10,3);
-			function wp_inline_list_edit_postfield_post_excerpt($value) {
-				return '<textarea data-type="post_column" data-name="post_content" class="triggerTextareaModal">' . $value . '</textarea>';
-			}
+		// 	add_filter('wp_inline_list_edit_postfield_post_excerpt', 'wp_inline_list_edit_postfield_post_excerpt',10,3);
+		// 	function wp_inline_list_edit_postfield_post_excerpt($value) {
+		// 		return '<textarea data-type="post_column" data-name="post_content" class="triggerTextareaModal">' . $value . '</textarea>';
+		// 	}
 
 		/**
 		 * Post author

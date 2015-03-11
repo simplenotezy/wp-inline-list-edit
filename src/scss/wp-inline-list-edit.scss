@@ -38,6 +38,10 @@
 }
 
  .ui-dialog {
+    position: fixed;
+    top: 100px!important;
+    margin: auto;
+
     #textarea-modal {
         display: block;
 

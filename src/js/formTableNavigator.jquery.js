@@ -1,23 +1,39 @@
 (function ($) {
   $.fn.formNavigation = function () {
     $(this).each(function () {
-      $(this).find('input, select, textarea').on('keyup', function(e) {
+
+      $(this).on('keyup', 'input, select, textarea', function(e) {
         switch (e.which) {
+          
           case 39:
+            console.log('This is case 39', e.which);
             if(e.shiftKey) {
-              $(this).closest('td').next().find('input, select, textarea').focus(); break;
-              return false;
+              console.log('We have shift. Go focus');
+              $(this).closest('td').next().find('input, select, textarea').focus();
               
             }
+          break;
+          
           case 37:
+            console.log('This is case 37', e.which);
+
             if(e.shiftKey) {
-              $(this).closest('td').prev().find('input, select, textarea').focus(); break;
-              return false;
+              console.log('We have shift. Go focus');
+              $(this).closest('td').prev().find('input, select, textarea').focus();
             }
+          break;
+          
           case 40:
-            $(this).closest('tr').next().children().eq($(this).closest('td').index()).find('input, select, textarea').focus(); break;
+            console.log('This is case 40', e.which);
+
+            $(this).closest('tr').next().children().eq($(this).closest('td').index()).find('input, select, textarea').focus();
+          break;
+          
           case 38:
-            $(this).closest('tr').prev().children().eq($(this).closest('td').index()).find('input, select, textarea').focus(); break;
+            console.log('This is case 38', e.which);
+
+            $(this).closest('tr').prev().children().eq($(this).closest('td').index()).find('input, select, textarea').focus();
+          break;
         }
       });
     });

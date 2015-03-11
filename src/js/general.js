@@ -105,9 +105,10 @@ $(document).ready(function() {
 
 		var textareaDialog = $( "#textarea-modal" ).dialog({
 			autoOpen: false,
-			height: 550,
-			width: '80%',
-			modal: true,
+            draggable: false,
+            resizable: false,
+            modal: true,
+            width:'80%',
 			buttons: {
 				Close: function() {
 					textareaDialog.dialog( "close" );
@@ -134,13 +135,16 @@ $(document).ready(function() {
 		});
 
 		 $('#theInlineTable').on('click', '.wp_inline_edit .triggerTextareaModal', function() {
-			editing_textarea = $(this);
+
+		 	var source = $(this).parents('td').find('input, textarea, select');
+
+			editing_textarea = source;
 			
 			textareaDialog.find('#wp-textarea-editor-wrap, .default-editor').hide(); // hide all editors
 
 			textareaDialog.dialog( "open" );
 
-			$('.ui-dialog-title').text('Edit ' + wpille_keyToReadable($(this).data('name')));
+			$('.ui-dialog-title').text('Edit ' + wpille_keyToReadable(source.data('name')));
 
 			/**
 			 * Editor specific behaviour
@@ -154,7 +158,7 @@ $(document).ready(function() {
 					
 						textareaDialog.find('#wp-textarea-editor-wrap').show();
 
-						tinyMCE.activeEditor.setContent($(this).val());
+						tinyMCE.activeEditor.setContent(source.val());
 						tinyMCE.activeEditor.execCommand('mceFocus', false, tinyMCE.activeEditor.id);
 				} else {
 					console.log('default editor', $('.ui-dialog .default-editor').find('textarea'));
@@ -164,7 +168,7 @@ $(document).ready(function() {
 					 * Default editor
 					 */
 					
-						$('.ui-dialog .default-editor').show().find('textarea').val($(this).val()).focus();
+						$('.ui-dialog .default-editor').show().find('textarea').val(source.val()).focus();
 				}
 		});
 
