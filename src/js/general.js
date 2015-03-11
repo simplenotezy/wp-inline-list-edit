@@ -2,7 +2,6 @@ var $ = jQuery;
 
 $(document).ready(function() {
 
-
 	/**
 	 * When posttype change
 	 * @param  {[type]} ) {		buildTable();	} [description]
@@ -37,14 +36,37 @@ $(document).ready(function() {
 		});
 
 	/**
+	 * Taxonomies
+	 */
+	
+		$("#taxonomies").tagit({
+			availableTags: wpInlineListEdit.taxonomies,
+			afterTagRemoved: function() {
+				buildTable();
+			},
+			afterTagAdded: function() {
+				buildTable();
+			}
+		});
+
+	/**
 	 * Build table on click
 	 * @param  {[type]} ) {		buildTable();	} [description]
 	 * @return {[type]}   [description]
 	 */
 
-		$('body').on('click', '#generate_table', function() {
+		$('body').on('click', '#generate_table', function(event) {
+			event.preventDefault();
+
 			buildTable();
 		});
+
+	/**
+	 * Set inputs to last saved values
+	 */
+	
+		setInputsToLastSaved();
+		buildTable();
 
 	/**
 	 * On click change featured image
@@ -191,7 +213,7 @@ $(document).ready(function() {
 				var post_id = line.attr('data-post-id');
 
 			/**
-			 * 
+			 * If creating new post, and changing field, avoid
 			 */
 			
 			 	if(wpile_creating_new_post && !post_id) {
@@ -290,61 +312,162 @@ $(document).ready(function() {
 			 * Append loading
 			 */
 
-				checkContainer.append('<div class="spinner" style="display:inline;"></div>');
-				checkContainer.find('input').hide();
+				post_is_loading(post_id, true);
 
 			/**
 			 * Send request
 			 */
-				console.log(data);
+			
+				wpille_send_request(data, function(response) {
 
-				$.ajax({
-					type: 'POST',
-					url: ajaxurl,
-					data: data,
-					success: function(response) {
-						
-						console.log(response);
+					/* stop loading */
+					post_is_loading(post_id, false);
 
-						/* reset flag */
-						wpile_creating_new_post = false;
+					/* reset flag */
+					wpile_creating_new_post = false;
 
-						/* make json */
-						response = JSON.parse(response);
+					/* set id if created */
+					if(response.created)
+						line.attr('data-post-id', response.post_id); // add attribute
 
-						/* stop lading */
-						checkContainer.find('.spinner').remove();
-						checkContainer.find('input').show();
-
-						/* set id if created */
-						if(response.created)
-							line.attr('data-post-id', response.post_id); // add attribute
-					}
 				});
 		});
 });
+
+
+function wpille_send_request(data, callback) {
+	/**
+	 * Send request
+	 */
+
+		$.ajax({
+			type: 'POST',
+			url: ajaxurl,
+			data: data,
+			success: function(response) {
+
+				/* make json */
+				response = JSON.parse(response);
+
+				if(typeof callback === 'function')
+					callback(response);
+			}
+		});
+}
+
+function post_is_loading(post_id, loading) {
+	var line = $('.wp_inline_edit[data-post-id="' + post_id + '"]');
+	var checkContainer = line.find('th.check-column');
+
+	if(loading) {
+
+		if(checkContainer.find('.spinner').length === 0) {
+			checkContainer.append('<div class="spinner" style="display:inline;"></div>');
+			checkContainer.find('input').hide();
+		}
+
+	} else {
+		checkContainer.find('.spinner').remove();
+		checkContainer.find('input').show();
+	}
+}
 
 function generate_table_query() {
 	var query = '&post_type=' + $('#post_type').val();
 
 	var post_columns = $("#post_columns").tagit("assignedTags");	
 	var post_meta = $("#post_meta").tagit("assignedTags");
+	var taxonomies = $("#taxonomies").tagit("assignedTags");
 
 
 	query += '&fields=' + post_columns.join(',');
 	query += '&meta=' + post_meta.join(',');
+	query += '&taxonomies=' + taxonomies.join(',');
+
 
 	return query;
 }
 
+var buildTableRequest = null, originalSubmitText = null;
 function buildTable() {
-	$.get(wpInlineListEdit.site_url + '/wp-admin/?wpInlineListEditTable' + generate_table_query(), function(response) {
+	rememberInputs();
+
+	var query = wpInlineListEdit.site_url + '/wp-admin/?wpInlineListEditTable' + generate_table_query();
+	
+	console.log(query);
+
+	if(buildTableRequest)
+		buildTableRequest.abort();
+
+	if(!originalSubmitText)
+		originalSubmitText = $('button#generate_table').html();
+
+	$('button#generate_table').html('Generating...').prop('disabled', 'disabled');
+
+	buildTableRequest = $.get(query, function(response) {
+		$('button#generate_table').html(originalSubmitText).prop('disabled', false);
 		$('#theInlineTable').html(response);
 
 		appendEmptyLineToTable();
 
 		$('#theInlineTable table').formNavigation();
+
+		$(".taxonomy_tag_it").tagit({
+			autocomplete: {
+				source: function(search, choice) {
+					var taxonomy = $(this.element).data('taxonomy');
+					var tags = [];
+
+					$(wpInlineListEdit.taxonomies_terms).each(function() {
+						if(this.taxonomy == taxonomy)
+							tags.push(this.slug);
+					});
+
+                    var filter = search.term.toLowerCase();
+                    var tags_filtered = $.grep(tags, function(element) {
+                        // Only match autocomplete options that begin with the search term.
+                        // (Case insensitive.)
+                        return (element.toLowerCase().indexOf(filter) === 0);
+                    });
+
+					choice(tags_filtered);
+				},
+			},
+			afterTagRemoved: afterTaxonmyChanged,
+			afterTagAdded: afterTaxonmyChanged
+		});
 	});
+}
+
+function afterTaxonmyChanged(trigger, event) {
+	if(event.duringInitialization)
+		return;
+
+	var line = $(this).parents('.wp_inline_edit');
+	var taxonomy = $(this).data('taxonomy');
+	var post_id = line.attr('data-post-id'); // check with post_id
+
+	var data = {
+		'action': 'wpille_edit_taxonomy',
+		'post_id': post_id,
+		'taxonomy': taxonomy,
+		'tags': $(this).tagit("assignedTags")
+	};
+
+	/**
+	 * Append loading
+	 */
+
+		post_is_loading(post_id, true);
+
+	/**
+	 * Send request
+	 */
+	
+		wpille_send_request(data, function(response) {
+			/* stop loading */
+			post_is_loading(post_id, false);
+		});
 }
 
 function appendEmptyLineToTable() {
@@ -367,10 +490,34 @@ function appendEmptyLineToTable() {
 	 });
 }
 
-function rememberSettings() {
-	localStorage.wpInlineListEditSettings = {
+function rememberInputs() {
+	if(!localStorageSupported())
+		return;
 
-	};
+	localStorage.setObj('wpInlineListEditSettings.post_type', $('#post_type').val());
+	localStorage.setObj('wpInlineListEditSettings.post_columns', $("#post_columns").tagit("assignedTags"));
+	localStorage.setObj('wpInlineListEditSettings.post_meta', $("#post_meta").tagit("assignedTags"));
+	localStorage.setObj('wpInlineListEditSettings.taxonomies', $("#taxonomies").tagit("assignedTags"));
+}
+
+function setInputsToLastSaved() {
+	if(!localStorageSupported())
+		return;
+
+	var settings = localStorage.getObj('wpInlineListEditSettings');
+
+
+	if(settings.post_type)
+		$('#post_type').val(settings.post_type);
+
+	if(settings.post_columns)
+		$("#post_columns").tagit("fill", settings.post_columns);
+
+	if(settings.post_meta)
+		$("#post_meta").tagit("fill", settings.post_meta);
+
+	if(settings.taxonomies)
+		$("#taxonomies").tagit("fill", settings.taxonomies);
 }
 
 function wpille_keyToReadable(string) {
@@ -380,3 +527,160 @@ function wpille_keyToReadable(string) {
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
+
+/**
+ * Check if localstorage is supported
+ * @return {Boolean} [description]
+ */
+
+	function localStorageSupported() {
+		/**
+		 * Supported in browser?
+		 */
+		
+			if(typeof Storage === 'undefined')
+				return false;
+
+		/**
+		 * Ensure it is useable
+		 */
+		
+			var testKey = 'test', storage = window.sessionStorage;
+
+			try {
+				storage.setItem(testKey, '1');
+				storage.removeItem(testKey);
+				//return localStorageName in win && win[localStorageName];
+			} catch (error) {
+				console.log('Localstorage seems to be unsupported', error);
+				return false;
+			}
+
+		/**
+		 * Passed tests - we are enabled
+		 */
+			
+			return true;
+	}
+
+/**
+ *
+ * MOVED TO: https://github.com/iFind/html5MultidimensionalStorage
+ *
+ * This methods extends the default HTML5 Storage object and add support
+ * to set and get multidimensional data
+ *
+ * @example Storage.setObj('users.albums.sexPistols',"blah");
+ * @example Storage.setObj('users.albums.sexPistols',{ sid : "My Way", nancy : "Bitch" });
+ * @example Storage.setObj('users.albums.sexPistols.sid',"Other songs");
+ *
+ * @example Storage.getObj('users');
+ * @example Storage.getObj('users.albums');
+ * @example Storage.getObj('users.albums.sexPistols');
+ * @example Storage.getObj('users.albums.sexPistols.sid');
+ * @example Storage.getObj('users.albums.sexPistols.nancy');
+ *
+ * This is just a prototype and is not recommended to use at production apps
+ * USE AT YOUR OWN RISK
+ *
+ * @author Klederson Bueno <klederson@klederson.com>
+ * @author Gabor Zsoter <helo@zsitro.com>
+ */
+
+	//Add Storage support for objects
+	Storage.prototype.__walker = function(path,o) {
+		//Validate if path is an object otherwise returns false
+		if(typeof path !== "object")
+		return undefined;
+ 
+		if(path.length === 0){
+		return o;
+		}
+ 
+		for(var i in path){
+		var prop = path[i];
+		//Check if path step exists
+		if(o.hasOwnProperty(prop)){
+			var val = o[prop];
+			if(typeof val == 'object'){
+			path.splice(0,1);
+			return this.__walker(path,val);
+			} else {
+			return val;
+			}
+		}
+		}
+	};
+ 
+	Storage.prototype.setObj = function(key, value) {
+ 
+		key = encodeURIComponent(key);
+ 
+		var path = key.split('.');
+ 
+		//First level is always the localStorage key pair item
+		var _key = path[0];
+		var os = this.getItem(_key) !== null ? JSON.parse(this.getItem(_key)) : null; //general storage key pair element
+		path.splice(0,1);
+ 
+		if(os === null) {
+		os = {};
+		this.setItem(_key,JSON.stringify(os));
+		}
+ 
+		var innerWalker = function(path,o) {
+ 
+		//Validate if path is an object otherwise returns false
+		if(typeof path !== "object")
+			return undefined;
+ 
+		if(path.length == 1) {
+			o[path[0]] = value;
+			return o;
+		} else if(path.length === 0) {
+			os = value;
+			return os;
+		}
+		   
+		var val = null;
+ 
+		for(var i in path){
+			var prop = path[i];
+			//Check if path step exists
+			if(o.hasOwnProperty(prop)) {
+			val = o[prop];
+			if(typeof val == 'object'){
+				path.splice(0,1);
+				return innerWalker(path,val);
+			}
+			} else {
+			//create depth
+			o[prop] = {};
+			val = o[prop];
+			path.splice(0,1);
+			return innerWalker(path,val);
+			}
+		}
+		};
+ 
+		innerWalker(path,os);
+	   
+		this.setItem(_key,JSON.stringify(os));
+	};
+ 
+	Storage.prototype.getObj = function(key) {
+ 
+		key = encodeURIComponent(key);
+		key = key.split('.');
+ 
+		//First level is always the localStorage key pair item
+		var _key = key[0];
+		var o = this.getItem(_key) ? JSON.parse(this.getItem(_key)) : null;
+ 
+		if(o === null)
+		return undefined;
+ 
+		key.splice(0,1);
+ 
+		return this.__walker(key,o);
+	};

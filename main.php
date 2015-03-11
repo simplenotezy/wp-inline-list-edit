@@ -47,18 +47,26 @@
 					$posts = new WP_Query( array(
 						'post_status' => 'publish',
 						'post_type' => $_GET['post_type'],
-						'posts_per_page' => 20
+						'posts_per_page' => (isset($_GET['limit'])) ? $_GET['limit'] : 20,
+						'page' => (isset($_GET['page'])) ? $_GET['page'] : 1,
 					));
 
 					$post_columns = explode(',', $_GET['fields']);
 					$post_meta = explode(',', $_GET['meta']);
+					$taxonomies = explode(',', $_GET['taxonomies']);
+					$posts = $posts->get_posts();
+
+
+					$taxonomies_data = wp_get_object_terms(wp_list_pluck($posts, 'ID' ), $taxonomies, array('fields' => 'all_with_object_id'));
 
 
 					if(count($post_meta) == 1 && $post_meta[0] == '')
 						$post_meta = array();
 
+					if(count($taxonomies) == 1 && $taxonomies[0] == '')
+						$taxonomies = array();
 
-					$columns = array_merge($post_columns, $post_meta);
+					$columns = array_merge($post_columns, $post_meta, $taxonomies);
 
 					echo '<table class="widefat fixed" cellspacing="0">';
 						echo '<thead>';
@@ -82,46 +90,74 @@
 						echo '</tfoot>';
 
 						echo '<tbody>';
-							foreach($posts->get_posts() as $post) {
+							foreach($posts as $post) {
 								$post = (array) $post;
 								$this_post_meta = get_post_meta($post['ID']);
 
 								echo '<tr class="alternate wp_inline_edit" data-post-id="' . $post['ID'] . '">';
 									echo '<th class="check-column" scope="row"><input type="checkbox"></th>';
 
-									foreach($post_columns as $key => $column) {
+									/**
+									 * Post table fields
+									 * @var [type]
+									 */
+									
+										foreach($post_columns as $key => $column) {
 
-										echo '<td class="column-title">';
+											echo '<td class="column-title">';
 
-											if(has_filter('wp_inline_list_edit_postfield_' . $column)) {
-												echo apply_filters('wp_inline_list_edit_postfield_' . $column, $post[$column]);												
-											} else {
-												echo apply_filters('wp_inline_list_edit_postfield_default', $post[$column], $column);												
-											}
+												if(has_filter('wp_inline_list_edit_postfield_' . $column)) {
+													echo apply_filters('wp_inline_list_edit_postfield_' . $column, $post[$column]);												
+												} else {
+													echo apply_filters('wp_inline_list_edit_postfield_default', $post[$column], $column);												
+												}
 
 
-												echo '<div class="row-actions">';
-													if($key == 0) {
-														echo '<span><a href="' . admin_url('post.php?post=' . $post['ID'] . '&action=edit') . '" tabindex="-1">' . __('Edit') . '</a> |</span>';
-														echo '<span><a href="' . $post['guid'] . '" tabindex="-1">' . __('View') . ' |</a></span>';
-													}
-													echo '<span><a href="#" tabindex="-1" class="triggerTextareaModal">' . __('Textarea') . ' |</a></span>';
-													echo '<span><a href="#" tabindex="-1" class="triggerTextareaModal tinyMCE">' . __('TinyMCE') . '</a></span>';
-												echo '</div>';
-										echo '</td>';
-									}
+													echo '<div class="row-actions">';
+														if($key == 0) {
+															echo '<span><a href="' . admin_url('post.php?post=' . $post['ID'] . '&action=edit') . '" tabindex="-1">' . __('Edit') . '</a> |</span>';
+															echo '<span><a href="' . $post['guid'] . '" tabindex="-1">' . __('View') . '</a> | </span>';
+														}
+														echo '<span><a href="#" tabindex="-1" class="triggerTextareaModal">' . __('Textarea') . '</a> | </span>';
+														echo '<span><a href="#" tabindex="-1" class="triggerTextareaModal tinyMCE">' . __('Editor') . '</a></span>';
+													echo '</div>';
+											echo '</td>';
+										}
 
-									foreach($post_meta as $key => $column) {
-										echo '<td class="column-title">';
+									/**
+									 * Post meta
+									 * @var [type]
+									 */
+									
+										foreach($post_meta as $key => $column) {
+											echo '<td class="column-title">';
 
-											if(has_filter('wp_inline_list_edit_metafield_' . $column)) {
-												echo apply_filters('wp_inline_list_edit_metafield_' . $column, $this_post_meta[$column][0]);												
-											} else {
-												echo apply_filters('wp_inline_list_edit_metafield_default', $this_post_meta[$column][0], $column);												
-											}
+												if(has_filter('wp_inline_list_edit_metafield_' . $column)) {
+													echo apply_filters('wp_inline_list_edit_metafield_' . $column, $this_post_meta[$column][0]);												
+												} else {
+													echo apply_filters('wp_inline_list_edit_metafield_default', $this_post_meta[$column][0], $column);												
+												}
 
-										echo '</td>';
-									}
+											echo '</td>';
+										}
+
+									/**
+									 * Taxonomies
+									 */
+
+										foreach($taxonomies as $taxonomy) {
+
+											echo '<td class="column-title">';
+
+												echo '<ul class="taxonomy_tag_it" data-taxonomy="' . $taxonomy . '">';
+
+													foreach(get_post_terms_from_data($taxonomies_data, $taxonomy, $post['ID']) as $tax_slug => $tax_name)
+														echo '<li>' . $tax_slug . '</li>';
+
+												echo '</ul>';
+
+											echo '</td>';
+										}
 
 								echo '</tr>';
 							}
@@ -184,7 +220,7 @@
 				<div class="wrap">
 					<h1>Inline list edit</h1>
 					<div class="filter">
-						<table class="form-table">
+						<table class="options-and-filters">
 							<tbody>
 								<tr>
 									<th scope="row"><label for="post_columns">Post type</label></th>
@@ -201,7 +237,11 @@
 									<td><ul id="post_meta" class="tagit"></ul></td>
 								</tr>
 								<tr>
-									<td colspan="2"><input id="generate_table" type="submit" value="Submit"></td>
+									<th scope="row"><label for="post_meta">Taxonomies</label></th>
+									<td><ul id="taxonomies" class="tagit"></ul></td>
+								</tr>
+								<tr>
+									<td colspan="2"><button id="generate_table" href="#" class="button button-primary">Generate table</button></td>
 								</tr>
 							</tbody>
 						</table>
@@ -247,6 +287,8 @@
 					wp_localize_script( 'wp-inline-list-edit-js', 'wpInlineListEdit', array(
 							'post_columns' => get_post_table_columns(),
 							'post_meta' => get_post_meta_keys(),
+							'taxonomies' => get_taxonomies_as_array(),
+							'taxonomies_terms' => get_terms(get_taxonomies(), array('hide_empty' => false)),
 							'site_url' => site_url()
 						));
 
@@ -277,6 +319,24 @@
 
 
 		/**
+		 * Tax edit
+		 */
+
+			add_action( 'wp_ajax_wpille_edit_taxonomy', 'wpille_edit_taxonomy' );
+
+			function wpille_edit_taxonomy() {
+				global $wpdb;
+
+				$updated = wp_set_object_terms($_POST['post_id'], $_POST['tags'], $_POST['taxonomy']);
+
+				exit(json_encode(array(
+					'updated' => $updated
+				), true));
+				
+				wp_die(); // this is required to terminate immediately and return a proper response
+			}
+
+		/**
 		 * Quick update
 		 */
 
@@ -303,6 +363,7 @@
 				
 				wp_die(); // this is required to terminate immediately and return a proper response
 			}
+
 		/**
 		 * Quick add
 		 */

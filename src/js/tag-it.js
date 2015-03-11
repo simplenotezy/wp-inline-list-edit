@@ -436,6 +436,21 @@
             return Boolean($.effects && ($.effects[name] || ($.effects.effect && $.effects.effect[name])));
         },
 
+        fill: function(tags) {
+            var that = this;
+
+            if(!tags)
+                return false;
+
+            this.removeAll(); // remove all tags
+            
+            $(tags).each(function() {
+                console.log('adding:' + this);
+
+                that.createTag(this, null, true);
+            });
+        },
+
         createTag: function(value, additionalClass, duringInitialization) {
             var that = this;
 
